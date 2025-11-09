@@ -1,0 +1,567 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>SkySutra-search city</title>
+<a href="home-page.html"></a>
+<!-- Google font -->
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;800&display=swap" rel="stylesheet">
+
+<!-- Full-screen fixed canvas -->
+<canvas id="fixedBgCanvas" aria-hidden="true"></canvas>
+
+<style>
+  #fixedBgCanvas{
+    position:absolute;
+    flex:auto;
+    background-repeat: repeat;
+    background-blend-mode: normal;
+    inset: 0;
+    width: 100vw;
+    height: 100vh;
+    z-index: -1;
+    pointer-events: none;
+    display:block;
+  }
+</style>
+
+
+
+<style>
+:root{
+  --bg-0: #0b1b2b;
+  --muted: #98a0ab;
+  --accent: #00BFFF;
+  --card: rgba(255,255,255,0.06);
+  --glass: rgba(255,255,255,0.04);
+}
+*{box-sizing:border-box}
+body{
+  margin:0; min-height:100vh; font-family:"Poppins",sans-serif; color:#fff;
+  background: linear-gradient(180deg,#042033,#0b1b2b); overflow-x:hidden ;flex: auto;
+  background-repeat: inherit;
+  object-fit: cover;
+  -webkit-font-smoothing:antialiased; -moz-osx-font-smoothing:grayscale;
+}
+
+/* top fixed picker */
+.topbar{
+  position:fixed; left:18px; top:18px; right:18px; display:flex; justify-content:space-between; align-items:center;
+  gap:12px; z-index:60;
+}
+.brand{ font-weight:800; font-size:18px; letter-spacing:0.3px; }
+.picker {
+  margin:0 auto; max-width:1100px; width:100%; display:flex; justify-content:center;
+}
+.center-bar {
+  width:540px; max-width:92%; height:48px; background:var(--glass); border-radius:28px; display:flex; align-items:center; gap:12px;
+  padding:8px 14px; box-shadow:0 6px 24px rgba(0,0,0,0.35); cursor:default;
+}
+.search-input{
+  flex:1; background:transparent; border:none; outline:none; color:#fff; font-size:15px; padding:8px;
+}
+.icon-btn{ background:transparent; border:none; color:var(--muted); cursor:pointer; font-size:18px; }
+
+/* suggestions dropdown */
+.suggestions {
+  position: absolute; top:74px; left:50%; transform:translateX(-50%); width:540px; max-width:92%;
+  background:#0f2433; border-radius:10px; box-shadow:0 12px 30px rgba(2,10,20,0.6); z-index:70; overflow:hidden;
+}
+.sugg-item{ padding:10px 14px; border-bottom:1px solid rgba(255,255,255,0.03); cursor:pointer; }
+.sugg-item:hover{ background:rgba(255,255,255,0.02); }
+
+/* Canvas background */
+#bgCanvas { position:fixed; inset:0; z-index:0; pointer-events:none; }
+
+/* Main forecast area below */
+.main {
+  margin-top:150px; width:100%; display:flex; justify-content:center; z-index:10; position:relative;
+}
+.container{
+  width:75%; max-width:1100px; padding:18px;
+}
+.forecast-area{
+  background: linear-gradient(180deg, rgba(255,255,255,0.03), rgba(255,255,255,0.02));
+  border-radius:12px; padding:16px; box-shadow:0 18px 40px rgba(0,0,0,0.45);
+}
+.header-row{ display:flex; justify-content:space-between; align-items:center; gap:12px; }
+.loc-title{ font-size:20px; font-weight:800; }
+.summary{ color:var(--muted); font-size:13px; margin-top:6px; }
+
+/* forecast grid */
+.forecast-grid{ display:flex; gap:12px; margin-top:14px; overflow:auto; padding-bottom:8px; }
+.day-card{ min-width:140px; background:rgba(255,255,255,0.03); border-radius:10px; padding:12px; text-align:center; }
+.day-card img{ width:64px; height:64px; }
+
+/* metrics panel */
+.metrics-panel{ margin-top:12px; display:flex; gap:10px; flex-wrap:wrap; }
+.metric{ background:rgba(255,255,255,0.03); padding:10px; border-radius:8px; min-width:160px; text-align:center; }
+.metric h4{ margin:0; font-size:14px; font-weight:700; }
+.metric p{ margin:6px 0 0; color:var(--muted); font-size:13px; }
+
+/* AQI badge */
+.badge { padding:6px 10px; border-radius:999px; font-weight:700; color:#fff; display:inline-block; }
+.badge.good{ background:#2ECC71; color:#05240f; }
+.badge.moderate{ background:#F1C40F; color:#2b2b0a; }
+.badge.unhealthy{ background:#E67E22; }
+.badge.very-unhealthy{ background:#E74C3C; }
+.badge.hazardous{ background:#8E44AD; }
+
+/* advice panel */
+.advice{ margin-top:12px; background:linear-gradient(90deg,#2f1111,#3b1f1f); border-left:6px solid #e74c3c; padding:12px; border-radius:8px; box-shadow:0 12px 30px rgba(0,0,0,0.45); display:none; }
+.advice ul{ margin:8px 0 0; padding-left:18px; color:#fff; }
+
+/* helper small */
+.small{ font-size:12px; color:var(--muted); }
+
+/* responsive */
+@media (max-width:900px){ .center-bar{ width:92%; } .picker{ padding:0 12px; } .loc-title{ font-size:18px } }
+</style>
+</head>
+<body>
+
+<canvas id="bgCanvas"></canvas>
+
+<div class="topbar">
+  <div class="brand">SkySutra</div>
+  <div class="picker">
+    <div class="center-bar" role="search" aria-label="City search">
+      <input id="searchBox" class="search-input" placeholder="Type a city or place — e.g. Delhi, Indira Gandhi Airport" aria-autocomplete="list" />
+      <button id="geoBtn" class="icon-btn" title="Use my location">📍</button>
+    </div>
+  </div>
+  <div style="width:120px; text-align:right;" class="small">Units: <button id="unitBtn" class="icon-btn">°C</button></div>
+</div>
+
+<!-- suggestions (injected) -->
+<div id="suggestionsRoot" style="display:flex; justify-content:center; position:relative; pointer-events:none;"></div>
+
+<!-- main content -->
+<div class="main">
+  <div class="container">
+    <div class="forecast-area" id="forecastArea" style="display:none;">
+      <div class="header-row">
+        <div>
+          <div class="loc-title" id="locTitle">—</div>
+          <div class="summary" id="locSummary">—</div>
+        </div>
+        <div style="text-align:right">
+          <div id="currentTemp" style="font-weight:800; font-size:22px">—</div>
+          <div class="small" id="currentCond">—</div>
+        </div>
+      </div>
+
+      <div id="forecastGrid" class="forecast-grid" aria-live="polite"></div>
+
+      <div id="metricsPanel" class="metrics-panel" style="margin-top:14px"></div>
+
+      <div id="advicePanel" class="advice" role="alert"></div>
+    </div>
+  </div>
+</div>
+
+<!-- Chart.js -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+
+<script>
+/* =========================
+   CONFIG - Replace locally
+   ========================= */
+const API_KEY = "0f507d4c5d4d427e94a95710250811"; // ← Replace this locally with your WeatherAPI key
+const SEARCH_URL = "https://api.weatherapi.com/v1/search.json";
+const FORECAST_URL = "https://api.weatherapi.com/v1/forecast.json";
+
+/* STATE */
+let debounceTimer = null;
+let suggestions = [];
+let latestData = null;
+let unit = 'C'; // 'C' or 'F'
+const daysToFetch = 14; // today + next 7 (change to 14 if you want 14-day)
+
+/* DOM */
+const searchBox = document.getElementById('searchBox');
+const suggestionsRoot = document.getElementById('suggestionsRoot');
+const forecastArea = document.getElementById('forecastArea');
+const locTitle = document.getElementById('locTitle');
+const locSummary = document.getElementById('locSummary');
+const currentTemp = document.getElementById('currentTemp');
+const currentCond = document.getElementById('currentCond');
+const forecastGrid = document.getElementById('forecastGrid');
+const metricsPanel = document.getElementById('metricsPanel');
+const advicePanel = document.getElementById('advicePanel');
+const unitBtn = document.getElementById('unitBtn');
+const geoBtn = document.getElementById('geoBtn');
+
+/* Canvas background setup */
+const canvas = document.getElementById('bgCanvas');
+const ctx = canvas.getContext('2d');
+function resizeCanvas(){ canvas.width = window.innerWidth; canvas.height = window.innerHeight; }
+resizeCanvas(); window.addEventListener('resize', resizeCanvas);
+let animHandle = null;
+
+/* ----- Animations ----- */
+function stopAnim(){ if (animHandle) cancelAnimationFrame(animHandle); ctx.clearRect(0,0,canvas.width,canvas.height); }
+
+/* Rain animation */
+function startRain(){
+  stopAnim();
+  const drops = Array.from({length: Math.max(60, Math.floor(window.innerWidth/15))}, () => ({ x: Math.random()*canvas.width, y: Math.random()*canvas.height, l: Math.random()*1.5+0.5, s: 6+Math.random()*6 }));
+  function frame(){
+    ctx.clearRect(0,0,canvas.width,canvas.height);
+    ctx.strokeStyle = "rgba(255,255,255,0.28)";
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    for (const d of drops){
+      ctx.moveTo(d.x, d.y);
+      ctx.lineTo(d.x, d.y + d.l*10);
+      d.y += d.s;
+      d.x += Math.sin(d.y/20) * 0.5;
+      if (d.y > canvas.height) { d.y = -10; d.x = Math.random()*canvas.width; }
+    }
+    ctx.stroke();
+    animHandle = requestAnimationFrame(frame);
+  }
+  frame();
+}
+
+/* Snow animation */
+function startSnow(){
+  stopAnim();
+  const flakes = Array.from({length: Math.max(80, Math.floor(canvas.width/10))}, () => ({ x: Math.random()*canvas.width, y: Math.random()*canvas.height, r: Math.random()*3+1, s: 0.3+Math.random()*1.4 }));
+  function frame(){
+    ctx.clearRect(0,0,canvas.width,canvas.height);
+    ctx.fillStyle = "rgba(255,255,255,0.95)";
+    for (const f of flakes){
+      ctx.beginPath();
+      ctx.arc(f.x, f.y, f.r, 0, Math.PI*2);
+      ctx.fill();
+      f.y += f.s;
+      f.x += Math.sin(f.y/20) * 0.5;
+      if (f.y > canvas.height){ f.y = -5; f.x = Math.random()*canvas.width; }
+    }
+    animHandle = requestAnimationFrame(frame);
+  }
+  frame();
+}
+
+/* Sun animation */
+function startSun(){
+  stopAnim();
+  let angle = 0;
+  function frame(){
+    ctx.clearRect(0,0,canvas.width,canvas.height);
+    const cx = canvas.width * 0.85;
+    const cy = canvas.height * 0.18;
+    // glow
+    const g = ctx.createRadialGradient(cx, cy, 20, cx, cy, 200);
+    g.addColorStop(0, "rgba(255,230,120,0.95)");
+    g.addColorStop(0.4, "rgba(255,220,40,0.08)");
+    g.addColorStop(1, "rgba(255,220,40,0.0)");
+    ctx.fillStyle = g;
+    ctx.beginPath(); ctx.arc(cx, cy, 180, 0, Math.PI*2); ctx.fill();
+    // sun core
+    ctx.beginPath(); ctx.fillStyle = "rgba(255,230,120,0.95)"; ctx.arc(cx,cy,36,0,Math.PI*2); ctx.fill();
+    // rays
+    for (let i=0;i<12;i++){
+      const a = angle + i*Math.PI/6;
+      const x1 = cx + Math.cos(a)*48, y1 = cy + Math.sin(a)*48;
+      const x2 = cx + Math.cos(a)*(84 + Math.sin(angle*2+i)/6*8), y2 = cy + Math.sin(a)*(84 + Math.cos(angle*2+i)/6*8);
+      ctx.beginPath(); ctx.strokeStyle = "rgba(255,220,80,0.75)"; ctx.lineWidth = 3; ctx.moveTo(x1,y1); ctx.lineTo(x2,y2); ctx.stroke();
+    }
+    angle += 0.008;
+    animHandle = requestAnimationFrame(frame);
+  }
+  frame();
+}
+
+/* Cloudy (soft moving clouds) */
+function startClouds(){
+  stopAnim();
+  const clouds = Array.from({length: 6}, (_,i)=>({
+    x: Math.random()*canvas.width,
+    y: 60 + Math.random()*120,
+    w: 180 + Math.random()*180,
+    speed: 0.2 + Math.random()*0.6,
+    alpha: 0.06 + Math.random()*0.08
+  }));
+  function drawCloud(x,y,w,alpha){
+    ctx.beginPath();
+    ctx.fillStyle = `rgba(255,255,255,${alpha})`;
+    ctx.ellipse(x,y,w*0.6, w*0.38, 0, 0, Math.PI*2);
+    ctx.ellipse(x+w*0.35,y-w*0.08,w*0.48,w*0.32,0,0,Math.PI*2);
+    ctx.fill();
+  }
+  function frame(){
+    ctx.clearRect(0,0,canvas.width,canvas.height);
+    for (const c of clouds){
+      drawCloud(c.x, c.y, c.w, c.alpha);
+      c.x += c.speed;
+      if (c.x - c.w > canvas.width) c.x = -c.w - Math.random()*100;
+    }
+    animHandle = requestAnimationFrame(frame);
+  }
+  frame();
+}
+
+/* Map condition to animation */
+function applyAnimationFromCondition(condText, tempC){
+  const text = (condText || '').toLowerCase();
+  // priority: thunder > rain > snow > clear/sunny > cloudy/mist
+  stopAnim();
+  if (text.includes('thunder') || text.includes('storm')) {
+    startRain();
+  } else if (text.includes('rain') || text.includes('drizzle') || text.includes('shower')) {
+    startRain();
+  } else if (text.includes('snow') || tempC <= 5) {
+    startSnow();
+  } else if (text.includes('sun') || text.includes('clear')) {
+    startSun();
+  } else {
+    startClouds();
+  }
+}
+
+/* ----- UI helpers ----- */
+function showSuggestions(list){
+  suggestionsRoot.style.pointerEvents = 'auto';
+  suggestionsRoot.innerHTML = `<div class="suggestions" role="listbox">${list.map((it,idx)=>`<div class="sugg-item" data-idx="${idx}">${escapeHtml(it.name)}${it.region? ', ' + escapeHtml(it.region):''}, ${escapeHtml(it.country)}</div>`).join('')}</div>`;
+  // attach click listeners
+  const items = suggestionsRoot.querySelectorAll('.sugg-item');
+  items.forEach(it => it.addEventListener('click', (e)=>{
+    const idx = Number(it.getAttribute('data-idx'));
+    const picked = list[idx];
+    const q = `${picked.name}${picked.region ? ', ' + picked.region : ''}`;
+    clearSuggestions();
+    searchBox.value = q;
+    fetchForecastFor(q);
+  }));
+}
+function clearSuggestions(){ suggestionsRoot.innerHTML = ''; suggestionsRoot.style.pointerEvents = 'none'; }
+
+/* formats */
+function formatTempC(c){ return `${Math.round(c)}°C`; }
+function formatTemp(c){ return unit === 'C' ? `${Math.round(c)}°C` : `${Math.round(c*9/5 + 32)}°F`; }
+function kphToMph(k){ return k * 0.621371; }
+
+/* escape html */
+function escapeHtml(s){ return String(s||'').replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[m])); }
+
+/* ----- Search (debounced) ----- */
+searchBox.addEventListener('input', (e)=>{
+  const q = e.target.value.trim();
+  if (debounceTimer) clearTimeout(debounceTimer);
+  if (!q){ clearSuggestions(); return; }
+  debounceTimer = setTimeout(()=> searchCities(q), 320);
+});
+
+async function searchCities(q){
+  try {
+    const u = `${SEARCH_URL}?key=${API_KEY}&q=${encodeURIComponent(q)}`;
+    const res = await fetch(u);
+    if (!res.ok) throw new Error('search error');
+    const data = await res.json();
+    // WeatherAPI returns array of {name,region,country,lat,lon}
+    if (Array.isArray(data) && data.length) { suggestions = data; showSuggestions(data); }
+    else { clearSuggestions(); }
+  } catch (err){
+    console.error('search err', err);
+    // If API fails (401/CORS), show a single option to try raw text search
+    showSuggestions([{ name: q, region:'', country:'' }]);
+  }
+}
+
+/* Use Geolocation */
+geoBtn.addEventListener('click', ()=>{
+  if (!navigator.geolocation){ alert('Geolocation not supported'); return; }
+  navigator.geolocation.getCurrentPosition(pos => {
+    const q = `${pos.coords.latitude},${pos.coords.longitude}`;
+    searchBox.value = '';
+    fetchForecastFor(q);
+  }, err => alert('Could not get location: ' + err.message), { timeout:8000 });
+});
+
+/* Unit toggle */
+unitBtn.addEventListener('click', ()=>{
+  unit = unit === 'C' ? 'F' : 'C';
+  unitBtn.textContent = unit === 'C' ? '°C' : '°F';
+  if (latestData) renderFromLatest();
+});
+
+/* ----- Fetch forecast & render ----- */
+async function fetchForecastFor(q){
+  clearSuggestions();
+  forecastArea.style.display = 'none';
+  try {
+    const url = `${FORECAST_URL}?key=${API_KEY}&q=${encodeURIComponent(q)}&days=${daysToFetch}&aqi=yes&alerts=no`;
+    const res = await fetch(url);
+    if (!res.ok) {
+      const txt = await res.text();
+      throw new Error(`API ${res.status}: ${txt}`);
+    }
+    const data = await res.json();
+    latestData = data;
+    renderFromLatest();
+    // If CORS/401 etc, the catch runs
+  } catch (err){
+    console.error('forecast err', err);
+    alert('Could not fetch forecast. Check API key, quota or CORS. See console for details.');
+  }
+}
+
+function renderFromLatest(){
+  if (!latestData) return;
+  const loc = latestData.location;
+  const cur = latestData.current;
+  const fc = latestData.forecast;
+  forecastArea.style.display = 'block';
+  locTitle.textContent = `${loc.name}${loc.region ? ', ' + loc.region : ''} — ${loc.country}`;
+  locSummary.textContent = `Local time: ${loc.localtime}`;
+  currentTemp.textContent = formatTemp(unit==='C' ? cur.temp_c : cur.temp_f);
+  currentCond.textContent = `${cur.condition.text} • Feels like ${formatTemp(unit==='C' ? cur.feelslike_c : cur.feelslike_f)}`;
+
+  // animation based on condition text + temp
+  applyAnimationFromCondition(cur.condition.text, cur.temp_c);
+
+  // forecast grid: show NEXT 7 days AFTER today (slice 1..)
+  const days = Array.isArray(fc.forecastday) ? fc.forecastday.slice(1, 8) : [];
+  forecastGrid.innerHTML = days.map(d => {
+    const date = new Date(d.date + 'T00:00:00');
+    const label = date.toLocaleDateString(undefined, { weekday:'short', month:'short', day:'numeric' });
+    const icon = d.day.condition.icon;
+    const text = d.day.condition.text;
+    const avgC = d.day.avgtemp_c;
+    const avg = unit === 'C' ? `${Math.round(avgC)}°C` : `${Math.round(avgC*9/5+32)}°F`;
+    const hum = Math.round(d.day.avghumidity);
+    const windK = Math.round(d.day.maxwind_kph);
+    const wind = unit==='C' ? `${windK} km/h` : `${Math.round(kphToMph(windK))} mph`;
+    return `<div class="day-card" aria-label="${label}">
+      <div style="font-weight:700">${label}</div>
+      <img src="${icon}" alt="${escapeHtml(text)}" />
+      <div style="margin-top:8px; font-weight:700">${avg}</div>
+      <div class="small" style="margin-top:6px">${escapeHtml(text)}</div>
+      <div class="small" style="margin-top:6px">Hum ${hum}% • ${wind}</div>
+    </div>`;
+  }).join('');
+
+  // metrics
+  buildMetrics(latestData);
+
+  // optional: smooth scroll to forecast
+  setTimeout(()=> {
+    const top = document.querySelector('.main').offsetTop - 20;
+    window.scrollTo({ top, behavior:'smooth' });
+  }, 140);
+}
+
+/* Build metrics + AQI + advice */
+function buildMetrics(data){
+  const cur = data.current;
+  const aqiObj = cur.air_quality || {};
+  const usEpa = aqiObj['us-epa-index'] ?? null;
+  const pm25 = aqiObj.pm2_5 ? Number(aqiObj.pm2_5).toFixed(2) : '—';
+  const uv = cur.uv ?? '—';
+  const hum = cur.humidity ?? '—';
+  const windK = cur.wind_kph ?? '—';
+  const wind = unit === 'C' ? `${Math.round(windK)} km/h` : `${Math.round(kphToMph(windK))} mph`;
+  const dew = unit === 'C' ? `${cur.dewpoint_c}°C` : `${cur.dewpoint_f}°F`;
+  const pres = `${cur.pressure_mb} mb`;
+  const vis = unit==='C' ? `${cur.vis_km} km` : `${(cur.vis_km * 0.621371).toFixed(1)} mi`;
+
+  // AQI classify
+  const aqiClass = classifyAqi(usEpa);
+  metricsPanel.innerHTML = `
+    <div class="metric"><h4>AQI</h4><p><span class="badge ${aqiClass.cls}">${usEpa ?? '—'}</span></p><p class="small">${aqiClass.label}</p><p class="small">PM2.5: ${pm25} µg/m³</p></div>
+    <div class="metric"><h4>UV Index</h4><p><strong>${uv}</strong></p><p class="small">Sun protection advice on hover</p></div>
+    <div class="metric"><h4>Humidity</h4><p>${hum}%</p></div>
+    <div class="metric"><h4>Wind</h4><p>${wind}</p></div>
+    <div class="metric"><h4>Dew Point</h4><p>${dew}</p></div>
+    <div class="metric"><h4>Pressure</h4><p>${pres}</p></div>
+    <div class="metric"><h4>Visibility</h4><p>${vis}</p></div>
+  `;
+
+  // Add tooltip explanations via title attribute
+  const metricEls = metricsPanel.querySelectorAll('.metric');
+  metricEls[0].setAttribute('title', aqiClass.tooltip);
+  metricEls[1].setAttribute('title', uvAdviceText(uv));
+
+  // Advice panel: if AQI >=4 (unhealthy) or UV >=8 show safety advice
+  const showAdvice = (usEpa !== null && Number(usEpa) >= 4) || (uv !== '—' && Number(uv) >= 8);
+  if (showAdvice){
+    const adv = compileAdvice({ usEpa, uv });
+    advicePanel.innerHTML = `<strong>Safety recommendations</strong><ul>${adv.map(a=>`<li>${escapeHtml(a)}</li>`).join('')}</ul>`;
+    advicePanel.style.display = 'block';
+    advicePanel.classList.add('pulse'); // small attention if desired (pulse CSS can be added)
+  } else {
+    advicePanel.style.display = 'none';
+  }
+}
+
+/* AQI classification (WeatherAPI uses us-epa-index 1..5) */
+function classifyAqi(v){
+  const n = Number(v);
+  if (!v || n <= 1) return { cls:'good', label:'Good', tooltip:'Air quality is satisfactory.' };
+  if (n === 2) return { cls:'moderate', label:'Moderate', tooltip:'Acceptable; sensitive people watch.' };
+  if (n === 3) return { cls:'unhealthy', label:'Unhealthy for sensitive', tooltip:'Sensitive groups should limit outdoor exertion.' };
+  if (n === 4) return { cls:'very-unhealthy', label:'Unhealthy', tooltip:'Everyone may experience health effects; reduce outdoor time.' };
+  if (n >= 5) return { cls:'hazardous', label:'Very Unhealthy / Hazardous', tooltip:'Avoid outdoor activity; seek clean air.' };
+  return { cls:'', label:'—', tooltip:'No AQI data' };
+}
+function uvAdviceText(v){
+  const n = Number(v);
+  if (!v || n <= 2) return 'Low risk. Normal outdoor activities.';
+  if (n <= 5) return 'Moderate. Wear sunscreen and sunglasses.';
+  if (n <= 7) return 'High. Use SPF30+, limit midday sun.';
+  if (n <= 10) return 'Very high. Minimize sun exposure.';
+  return 'Extreme. Avoid sun, protective clothing and SPF 50+ required.';
+}
+
+/* compile advice */
+function compileAdvice({ usEpa, uv }){
+  const out=[];
+  if (usEpa !== null){
+    const n = Number(usEpa);
+    if (n >= 5) out.push('Very Unhealthy AQI — avoid outdoor activities, keep windows closed, use air purifiers.');
+    else if (n === 4) out.push('Unhealthy AQI — reduce long or heavy exertion outdoors.');
+    else if (n === 3) out.push('Unhealthy for sensitive groups — sensitive people should take precautions.');
+  }
+  if (uv !== '—'){
+    const u = Number(uv);
+    if (u >= 11) out.push('Extreme UV — stay indoors during midday; use SPF50+.');
+    else if (u >= 8) out.push('Very high UV — cover up, use sunscreen SPF30+.');
+    else if (u >= 6) out.push('High UV — apply sunscreen and wear protective clothing.');
+  }
+  if (out.length === 0) out.push('Air quality and UV are within normal ranges — follow common-sense precautions.');
+  return out;
+}
+
+/* ----- keyboard: enter triggers fetch ----- */
+searchBox.addEventListener('keydown', (e)=>{
+  if (e.key === 'Enter') {
+    const q = searchBox.value.trim();
+    if (q) fetchForecastFor(q);
+  }
+});
+
+/* Basic model comparison (calls other public APIs optionally) - lightweight demo stub */
+async function modelComparison(q, baseTemp){
+  // For a real implementation you would call OpenWeather / Meteo and compare.
+  // Here we mock small differences based on baseTemp.
+  return {
+    openweather: baseTemp + (Math.random()>0.5?1:0),
+    weatherapi: baseTemp,
+    meteo: baseTemp - (Math.random()>0.5?1:0)
+  };
+}
+
+/* ----- handle CORS / API issues note ----- */
+window.addEventListener('error', (e)=>console.warn('JS error', e));
+window.addEventListener('unhandledrejection', (e)=>console.warn('Promise rejection', e));
+
+/* initial - optional: try geolocation on load? (commented) */
+// navigator.geolocation && navigator.geolocation.getCurrentPosition(p=>fetchForecastFor(`${p.coords.latitude},${p.coords.longitude}`));
+</script>
+</body>
+</html>
+
+

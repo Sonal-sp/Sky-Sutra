@@ -1,0 +1,168 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>SkySutra — Hero</title>
+
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+
+  <style>
+    :root {
+      --glacier-white: #FFFFFF;
+    }
+    *, *::before, *::after {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+    html, body {
+      height: 100%;
+    }
+    body {
+      font-family: "Poppins", system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial;
+      color: var(--glacier-white);
+      background: #0b1114;
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
+    }
+    .navbar {
+      position: fixed; top: 0; left: 0; right: 0; height: 64px;
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 0 28px; z-index: 50;
+      background: linear-gradient(to bottom, rgba(255, 255, 255, 0.08), rgba(255, 255, 255, 0.02));
+      backdrop-filter: blur(8px);
+      -webkit-backdrop-filter: blur(8px);
+      border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+    }
+    .logo {
+      display: flex; align-items: center; gap: 10px;
+      font-weight: 700; font-size: 20px; color: var(--glacier-white);
+    }
+    .logo svg {
+      width: 36px; height: 36px;
+      filter: drop-shadow(0 1px 0 rgba(255, 255, 255, 0.03));
+    }
+    .nav-links {
+      display: flex; gap: 28px; align-items: center;
+      font-weight: 500;
+    }
+    .nav-links a {
+      color: var(--glacier-white); text-decoration: none;
+      font-size: 16px; padding: 6px 8px;
+    }
+    .hero {
+      background-image: url('bg-image.png');
+      background-size: cover;
+      background-position: center center;
+      min-height: 100vh;
+      padding-top: 64px;
+      display: flex; align-items: center; justify-content: center;
+      position: relative; text-align: center;
+    }
+    .hero::before {
+      content: ""; position: absolute; inset: 0;
+      background: linear-gradient(180deg, rgba(8, 12, 14, 0.25) 0%, rgba(8, 12, 14, 0.45) 100%);
+      pointer-events: none;
+    }
+    .hero-content {
+      position: relative; max-width: 1100px;
+      padding: 48px 24px; z-index: 2;
+    }
+    .quote {
+      font-size: clamp(22px, 4.5vw, 48px);
+      line-height: 1.05; font-weight: 600;
+      text-shadow: 0 6px 24px rgba(0, 0, 0, 0.5);
+      margin-bottom: 36px; transform: translateY(-10px);
+    }
+    /* CTA styled as a button but also contains an anchor fallback */
+    .cta {
+      font-size: 18px; font-weight: 600; color: var(--glacier-white);
+      background: rgba(255, 255, 255, 0.05); padding: 12px 18px;
+      border-radius: 8px;
+      display: inline-flex; gap: 10px; align-items: center;
+      text-decoration: none; box-shadow: 0 6px 18px rgba(0, 0, 0, 0.4);
+      cursor: pointer; transition: background 0.18s, transform 0.06s;
+      border: none;
+    }
+    .cta:hover {
+      background: rgba(255, 255, 255, 0.12);
+      transform: translateY(-2px);
+    }
+    .hero-footer {
+      position: absolute; left: 50%;
+      transform: translateX(-50%); bottom: 48px;
+      z-index: 2; width: 100%;
+      display: flex; justify-content: center;
+      padding: 0 16px;
+    }
+    @media (max-width: 800px) {
+      .nav-links {
+        display: none;
+      }
+      .quote {
+        font-size: clamp(18px, 5.5vw, 32px);
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <header class="navbar" role="banner">
+    <div class="logo" aria-label="SkySutra logo">
+      <svg viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" focusable="true">
+        <defs>
+          <linearGradient id="g" x1="0" x2="1">
+            <stop offset="0" stop-color="#F2F4F5"/>
+            <stop offset="1" stop-color="#A7C7CA"/>
+          </linearGradient>
+        </defs>
+        <circle cx="20" cy="18" r="8" fill="url(#g)" opacity="0.95"/>
+        <path d="M42 32c0-6.627-5.373-12-12-12-2.08 0-4.02.52-5.72 1.44C23.7 19.04 21 21 21 24c0 4 3 6 3 6h18z" fill="#F2F4F5" opacity="0.95"/>
+      </svg>
+
+      <span>SkySutra</span>
+      <small style="font-weight: 500; font-size: 11px; color: #FFFFFF; margin-left: 8px;">A smart weather app!</small>
+    </div>
+
+    <nav class="nav-links" role="navigation" aria-label="Main navigation">
+      <a href="#">Home</a>
+      <a href="#">About Us</a>
+      <a href="#">Contact Us</a>
+    </nav>
+  </header>
+
+  <main class="hero" role="main" aria-label="Hero">
+    <div class="hero-content">
+      <h1 class="quote">“The sky doesn’t hide its moods — it shares them with those who listen.”</h1>
+
+      <a class="cta" id="ctaAnchor" href="search-city.html" aria-label="Check your city's weather">
+        <span>Check your city’s weather now!</span>
+      </a>
+
+    </div>
+    <div class="hero-footer" aria-hidden="true"></div>
+  </main>
+
+  <script>
+    // Note: The original HTML had an element with id="redirectBtn" and a script block referencing it,
+    // but no such element exists in the final HTML structure for the button/anchor.
+    // The anchor <a class="cta" id="ctaAnchor"> correctly links to "search-city.html".
+    // I've removed the non-functional/debugging JS to clean up.
+    
+    // Original JS was:
+    // document.getElementById("redirectBtn").addEventListener("click", () => { ... });
+    // document.getElementById("ctaAnchor").addEventListener("click", (e) => { ... });
+    // window.addEventListener('error', (ev) => console.warn('Window error:', ev));
+    // window.addEventListener('unhandledrejection', (ev) => console.warn('Unhandled promise rejection:', ev));
+
+    // Keeping only the necessary anchor-related behavior, if needed, but since the link works by default, 
+    // the following is sufficient (and matches the structure/functionality):
+    
+    document.getElementById("ctaAnchor").addEventListener("click", (e) => {
+        // This is a placeholder to ensure the ID reference remains,
+        // but no preventDefault() is called so the link navigation works.
+    });
+  </script>
+</body>
+</html>
