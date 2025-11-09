@@ -182,3 +182,98 @@ main {
 
 /* small badge pill */
 .tip-pill { display:inline-block; padding:4px 8px; border-radius:999px; font-weight:700; font-size:12px; margin-left:6px; color:#fff; opacity:0.95; }
+
+
+/* ---------- Responsive base ---------- */
+:root{
+  --bg: #0b1114;
+  --muted: #9fb0b6;
+  --card: rgba(255,255,255,0.03);
+  --gap: 12px;
+}
+
+/* Fluid typography */
+html { font-size: 16px; }
+h1{ font-size: clamp(1.25rem, 3.5vw, 2.4rem); }
+h2{ font-size: clamp(1.1rem, 2.6vw, 1.6rem); }
+body, input, button, .summary { font-size: clamp(0.9rem, 1.8vw, 1rem); }
+
+/* Page container */
+.container {
+  margin: calc(64px + 3vh) auto 60px;
+  max-width: 1100px;
+  padding: 16px;
+  width: min(96%, 1100px);
+}
+
+/* Search row: stack on small screens */
+.search-card {
+  display:flex;
+  gap:var(--gap);
+  align-items:center;
+  width:100%;
+}
+.search-card .input { flex: 1 1 auto; min-width: 0; padding:10px 12px; }
+.search-card .btn { flex: 0 0 auto; }
+
+/* Forecast area layout: grid for cards */
+.forecast-area { padding:16px; border-radius:12px; }
+.header-row { display:flex; gap:16px; align-items:center; justify-content:space-between; flex-wrap:wrap; }
+
+/* Forecast grid: responsive auto-fit */
+.forecast-grid {
+  display:grid;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: 12px;
+  margin-top: 14px;
+  align-items:start;
+}
+
+/* Day card */
+.day-card { padding:12px; border-radius:10px; text-align:center; background:var(--card); }
+.day-card img { width:64px; height:64px; max-width:100%; object-fit:contain; }
+
+/* metrics panel flexible layout */
+.metrics-panel {
+  display:grid;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: 10px;
+  margin-top:12px;
+}
+
+/* tips panel */
+.tips-panel { margin-top:12px; padding:12px; border-radius:10px; }
+
+/* CTA / buttons sizing for touch */
+.btn, .cta {
+  padding: 12px 14px;
+  border-radius: 10px;
+  min-height:44px;
+  font-weight:700;
+  touch-action: manipulation;
+}
+
+/* Make the hero compact on small screens */
+@media (max-width: 900px) {
+  .container { margin-top: calc(64px + 2vh); padding:12px; }
+  .hero .quote { font-size: clamp(18px, 6vw, 28px); }
+  .nav-links { display:none; } /* hide complex nav on small screens */
+}
+
+/* Mobile-first tweaks */
+@media (max-width: 480px) {
+  html { font-size:15px; }
+  .day-card { min-height: 120px; padding:10px; }
+  .tip-icon { width:40px; height:40px; min-width:40px; }
+  .forecast-grid { gap:10px; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); }
+  .metrics-panel { grid-template-columns: 1fr 1fr; } /* two columns on small phones */
+  .container { margin: calc(64px + 2vh) 10px 60px; }
+}
+
+/* Respect reduced motion */
+@media (prefers-reduced-motion: reduce) {
+  * { animation-duration: 0.001ms !important; animation-iteration-count: 1 !important; transition-duration: 0.001ms !important; scroll-behavior: auto !important; }
+}
+
+/* utility: hide overflow-x */
+html,body{ overflow-x:hidden; background:var(--bg); color:#fff; }
